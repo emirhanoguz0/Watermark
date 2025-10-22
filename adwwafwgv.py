@@ -29,13 +29,25 @@ def process_video_thread(file_path, text):
         def build_text_clip(txt: str, font_size: int, color: str) -> ImageClip:
             # Font yükle (Windows varsayılan arial, yoksa fallback)
             font: ImageFont.FreeTypeFont | ImageFont.ImageFont
+            # Font seçimini al
+            selected_font = font_var.get()
+            font_size = int(size_var.get())
+            
             try:
-                font = ImageFont.truetype("C:\\Windows\\Fonts\\DMSans-Regular.ttf", font_size)
-            except Exception:
-                try:
+                if selected_font == "DM Sans":
+                    font = ImageFont.truetype("C:\\Windows\\Fonts\\DMSans-Regular.ttf", font_size)
+                elif selected_font == "Arial":
                     font = ImageFont.truetype("C:\\Windows\\Fonts\\arial.ttf", font_size)
-                except Exception:
-                    font = ImageFont.load_default()
+                elif selected_font == "Times New Roman":
+                    font = ImageFont.truetype("C:\\Windows\\Fonts\\times.ttf", font_size)
+                elif selected_font == "Calibri":
+                    font = ImageFont.truetype("C:\\Windows\\Fonts\\calibri.ttf", font_size)
+                elif selected_font == "Verdana":
+                    font = ImageFont.truetype("C:\\Windows\\Fonts\\verdana.ttf", font_size)
+                else:
+                    font = ImageFont.truetype("C:\\Windows\\Fonts\\arial.ttf", font_size)
+            except Exception:
+                font = ImageFont.load_default()
 
             # Metin boyutunu ölç
             tmp_img = Image.new("RGBA", (10, 10), (0, 0, 0, 0))
@@ -58,7 +70,7 @@ def process_video_thread(file_path, text):
             txt_clip = ImageClip(rgb_with_alpha).with_duration(video_clip.duration)
             return txt_clip
 
-        watermark_clip = build_text_clip(text, FONT_SIZE, FONT_COLOR).with_position(POSITION)
+        watermark_clip = build_text_clip(text, int(size_var.get()), FONT_COLOR).with_position(POSITION)
 
         final_clip = CompositeVideoClip([video_clip, watermark_clip])
 
@@ -87,7 +99,8 @@ def process_video_thread(file_path, text):
         root.after(0, lambda: status_label.config(text="Error occurred. Please try again."))
     finally:
         root.after(0, lambda: progress_bar.stop())
-        root.after(0, lambda: progress_bar.config(mode='determinate'))
+        root.after(0, lambda: progress_bar.config(mode='determinate', value=100))
+        root.after(0, lambda: progress_label.config(text="100%"))
         root.after(0, lambda: process_button.config(state='normal'))
 
 def browse_output_directory():
@@ -124,8 +137,8 @@ def select_file_and_add_watermark():
         return
 
     status_label.config(text="Processing started, please wait...")
-    progress_bar.config(mode='indeterminate')
-    progress_bar.start()
+    progress_bar.config(mode='determinate', value=0)
+    progress_label.config(text="0%")
     process_button.config(state='disabled')
     
     # Video işleme işlemini ayrı thread'de başlat
@@ -136,7 +149,7 @@ def select_file_and_add_watermark():
 # --- Grafik Arayüz (GUI) Kurulumu ---
 root = tk.Tk()
 root.title("Quick Watermark Tool")
-root.geometry("500x350")
+root.geometry("500x320")
 
 main_frame = tk.Frame(root, padx=20, pady=20)
 main_frame.pack(expand=True, fill=tk.BOTH)
@@ -146,10 +159,10 @@ watermark_var = tk.StringVar(value="©")
 wm_frame = tk.Frame(main_frame)
 wm_frame.pack(fill=tk.X, pady=(0, 10))
 
-wm_label = tk.Label(wm_frame, text="Watermark Text:", font=("DM Sans", 10))
+wm_label = tk.Label(wm_frame, text="Watermark Text:", font=("DM Sans", 10), width=15, anchor="w")
 wm_label.pack(side=tk.LEFT)
 
-wm_entry = tk.Entry(wm_frame, textvariable=watermark_var, font=("DM Sans", 12))
+wm_entry = tk.Entry(wm_frame, textvariable=watermark_var, font=("DM Sans", 10))
 wm_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10, 0))
 
 # Input video file
@@ -157,7 +170,7 @@ input_file_var = tk.StringVar()
 input_frame = tk.Frame(main_frame)
 input_frame.pack(fill=tk.X, pady=(0, 10))
 
-input_label = tk.Label(input_frame, text="Input Video:", font=("DM Sans", 10))
+input_label = tk.Label(input_frame, text="Input Video:", font=("DM Sans", 10), width=15, anchor="w")
 input_label.pack(side=tk.LEFT)
 
 input_entry_frame = tk.Frame(input_frame)
@@ -183,7 +196,7 @@ output_dir_var = tk.StringVar(value=os.path.join(os.path.expanduser('~'), 'Deskt
 output_frame = tk.Frame(main_frame)
 output_frame.pack(fill=tk.X, pady=(0, 10))
 
-output_label = tk.Label(output_frame, text="Output Directory:", font=("DM Sans", 10))
+output_label = tk.Label(output_frame, text="Output Directory:", font=("DM Sans", 10), width=15, anchor="w")
 output_label.pack(side=tk.LEFT)
 
 output_entry_frame = tk.Frame(output_frame)
@@ -204,9 +217,35 @@ browse_button = tk.Button(
 )
 browse_button.pack(side=tk.RIGHT, padx=(10, 0))
 
-# Progress bar
-progress_bar = ttk.Progressbar(main_frame, mode='determinate', length=300)
-progress_bar.pack(pady=(0, 10))
+# Font and size selection
+font_frame = tk.Frame(main_frame)
+font_frame.pack(fill=tk.X, pady=(0, 10))
+
+font_label = tk.Label(font_frame, text="Font:", font=("DM Sans", 10), width=15, anchor="w")
+font_label.pack(side=tk.LEFT)
+
+font_var = tk.StringVar(value="DM Sans")
+font_combo = ttk.Combobox(font_frame, textvariable=font_var, font=("DM Sans", 10), width=12)
+font_combo['values'] = ('DM Sans', 'Arial', 'Times New Roman', 'Calibri', 'Verdana')
+font_combo.pack(side=tk.LEFT, padx=(10, 20))
+
+size_label = tk.Label(font_frame, text="Size:", font=("DM Sans", 10))
+size_label.pack(side=tk.LEFT)
+
+size_var = tk.StringVar(value="20")
+size_combo = ttk.Combobox(font_frame, textvariable=size_var, font=("DM Sans", 10), width=8)
+size_combo['values'] = ('12', '16', '20', '24', '28', '32', '36', '40')
+size_combo.pack(side=tk.LEFT, padx=(10, 0))
+
+# Progress bar with percentage
+progress_frame = tk.Frame(main_frame)
+progress_frame.pack(fill=tk.X, pady=(0, 10))
+
+progress_bar = ttk.Progressbar(progress_frame, mode='determinate', length=250)
+progress_bar.pack(side=tk.LEFT)
+
+progress_label = tk.Label(progress_frame, text="0%", font=("DM Sans", 10))
+progress_label.pack(side=tk.LEFT, padx=(10, 0))
 
 # Button
 process_button = tk.Button(
