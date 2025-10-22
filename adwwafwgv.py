@@ -47,9 +47,12 @@ def select_file_and_add_watermark():
             # Font yükle (Windows varsayılan arial, yoksa fallback)
             font: ImageFont.FreeTypeFont | ImageFont.ImageFont
             try:
-                font = ImageFont.truetype("C:\\Windows\\Fonts\\arial.ttf", font_size)
+                font = ImageFont.truetype("C:\\Windows\\Fonts\\DMSans-Regular.ttf", font_size)
             except Exception:
-                font = ImageFont.load_default()
+                try:
+                    font = ImageFont.truetype("C:\\Windows\\Fonts\\arial.ttf", font_size)
+                except Exception:
+                    font = ImageFont.load_default()
 
             # Metin boyutunu ölç
             tmp_img = Image.new("RGBA", (10, 10), (0, 0, 0, 0))
@@ -66,15 +69,13 @@ def select_file_and_add_watermark():
             draw.text((0, 0), txt, font=font, fill=color)
 
             np_img = np.array(img)
-            rgb = np_img[..., :3]
-            alpha = np_img[..., 3] / 255.0
-
-            txt_clip = ImageClip(rgb).set_duration(video_clip.duration)
-            mask_clip = ImageClip(alpha, ismask=True).set_duration(video_clip.duration)
-            txt_clip = txt_clip.set_mask(mask_clip)
+            # RGBA'yı RGB'ye dönüştür (şeffaflık korunur)
+            rgb_with_alpha = np_img
+            
+            txt_clip = ImageClip(rgb_with_alpha).with_duration(video_clip.duration)
             return txt_clip
 
-        watermark_clip = build_text_clip(text, FONT_SIZE, FONT_COLOR).set_position(POSITION)
+        watermark_clip = build_text_clip(text, FONT_SIZE, FONT_COLOR).with_position(POSITION)
 
         final_clip = CompositeVideoClip([video_clip, watermark_clip])
 
@@ -109,18 +110,18 @@ main_frame = tk.Frame(root, padx=20, pady=20)
 main_frame.pack(expand=True, fill=tk.BOTH)
 
 # Filigran metni girişi
-watermark_var = tk.StringVar(value="© Benim Filigranım")
-wm_label = tk.Label(main_frame, text="Filigran Metni:", font=("Helvetica", 10))
+watermark_var = tk.StringVar(value="©")
+wm_label = tk.Label(main_frame, text="Filigran Metni:", font=("DM Sans", 10))
 wm_label.pack(anchor="w")
-wm_entry = tk.Entry(main_frame, textvariable=watermark_var, font=("Helvetica", 12))
+wm_entry = tk.Entry(main_frame, textvariable=watermark_var, font=("DM Sans", 12))
 wm_entry.pack(fill=tk.X, pady=(0, 10))
 
 # Buton
 process_button = tk.Button(
     main_frame,
-    text="MP4 Video Seç ve Filigran Ekle",
+    text="MP4 Video Seç",
     command=select_file_and_add_watermark,
-    font=("Helvetica", 12),
+    font=("DM Sans", 10),
     bg="#4CAF50",
     fg="white",
     padx=10,
@@ -129,7 +130,7 @@ process_button = tk.Button(
 process_button.pack(pady=5)
 
 # Durum etiketi
-status_label = tk.Label(main_frame, text="Lütfen bir video dosyası seçin.", font=("Helvetica", 10))
+status_label = tk.Label(main_frame, text="Lütfen bir video dosyası seçin.", font=("DM Sans", 10))
 status_label.pack(pady=10)
 
 root.mainloop()
