@@ -66,8 +66,12 @@ def process_video_thread(file_path, text):
         file_name, file_ext = os.path.splitext(base_name)
         output_filename = f"{file_name}_filigranli{file_ext}"
 
-        desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
-        output_path = os.path.join(desktop_path, output_filename)
+        # Çıktı konumunu al (varsayılan Desktop)
+        output_dir = output_dir_var.get().strip()
+        if not output_dir:
+            output_dir = os.path.join(os.path.expanduser('~'), 'Desktop')
+        
+        output_path = os.path.join(output_dir, output_filename)
 
         final_clip.write_videofile(
             output_path,
@@ -76,10 +80,6 @@ def process_video_thread(file_path, text):
         )
 
         # UI güncellemeleri ana thread'de yapılmalı
-        root.after(0, lambda: messagebox.showinfo(
-            "Success!",
-            f"Video processed successfully!\n\nNew file saved to Desktop:\n{output_filename}"
-        ))
         root.after(0, lambda: status_label.config(text="Processing completed. You can select a new video."))
         
     except Exception as e:
@@ -90,21 +90,37 @@ def process_video_thread(file_path, text):
         root.after(0, lambda: progress_bar.config(mode='determinate'))
         root.after(0, lambda: process_button.config(state='normal'))
 
+def browse_output_directory():
+    """Çıktı klasörü seçme penceresini açar."""
+    directory = filedialog.askdirectory(title="Select Output Directory")
+    if directory:
+        output_dir_var.set(directory)
+
+def browse_input_file():
+    """Video dosyası seçme penceresini açar."""
+    file_path = filedialog.askopenfilename(
+        title="Select MP4 Video File to Add Watermark",
+        filetypes=[("MP4 Video Files", "*.mp4")]
+    )
+    if file_path:
+        input_file_var.set(file_path)
+
 def select_file_and_add_watermark():
-    """Dosya seçme penceresini açar ve filigran ekleme işlemini başlatır."""
+    """Video işleme işlemini başlatır."""
     # Kullanıcıdan watermark metnini al
     text = watermark_var.get().strip()
     if not text:
         messagebox.showwarning("Warning", "Please enter a watermark text.")
         return
 
-    file_path = filedialog.askopenfilename(
-        title="Select MP4 Video File to Add Watermark",
-        filetypes=[("MP4 Video Files", "*.mp4")]
-    )
-
+    # Video dosyası yolunu al
+    file_path = input_file_var.get().strip()
     if not file_path:
-        status_label.config(text="Operation cancelled.")
+        messagebox.showwarning("Warning", "Please select a video file.")
+        return
+
+    if not os.path.exists(file_path):
+        messagebox.showerror("Error!", "Selected video file does not exist.")
         return
 
     status_label.config(text="Processing started, please wait...")
@@ -120,17 +136,73 @@ def select_file_and_add_watermark():
 # --- Grafik Arayüz (GUI) Kurulumu ---
 root = tk.Tk()
 root.title("Quick Watermark Tool")
-root.geometry("500x250")
+root.geometry("500x350")
 
 main_frame = tk.Frame(root, padx=20, pady=20)
 main_frame.pack(expand=True, fill=tk.BOTH)
 
 # Watermark text input
 watermark_var = tk.StringVar(value="©")
-wm_label = tk.Label(main_frame, text="Watermark Text:", font=("DM Sans", 10))
-wm_label.pack(anchor="w")
-wm_entry = tk.Entry(main_frame, textvariable=watermark_var, font=("DM Sans", 12))
-wm_entry.pack(fill=tk.X, pady=(0, 10))
+wm_frame = tk.Frame(main_frame)
+wm_frame.pack(fill=tk.X, pady=(0, 10))
+
+wm_label = tk.Label(wm_frame, text="Watermark Text:", font=("DM Sans", 10))
+wm_label.pack(side=tk.LEFT)
+
+wm_entry = tk.Entry(wm_frame, textvariable=watermark_var, font=("DM Sans", 12))
+wm_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10, 0))
+
+# Input video file
+input_file_var = tk.StringVar()
+input_frame = tk.Frame(main_frame)
+input_frame.pack(fill=tk.X, pady=(0, 10))
+
+input_label = tk.Label(input_frame, text="Input Video:", font=("DM Sans", 10))
+input_label.pack(side=tk.LEFT)
+
+input_entry_frame = tk.Frame(input_frame)
+input_entry_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10, 0))
+
+input_entry = tk.Entry(input_entry_frame, textvariable=input_file_var, font=("DM Sans", 10))
+input_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+input_browse_button = tk.Button(
+    input_entry_frame,
+    text="",
+    command=browse_input_file,
+    font=("DM Sans", 9),
+    bg="white",
+    fg="black",
+    padx=10,
+    width=3
+)
+input_browse_button.pack(side=tk.RIGHT, padx=(10, 0))
+
+# Output directory input
+output_dir_var = tk.StringVar(value=os.path.join(os.path.expanduser('~'), 'Desktop'))
+output_frame = tk.Frame(main_frame)
+output_frame.pack(fill=tk.X, pady=(0, 10))
+
+output_label = tk.Label(output_frame, text="Output Directory:", font=("DM Sans", 10))
+output_label.pack(side=tk.LEFT)
+
+output_entry_frame = tk.Frame(output_frame)
+output_entry_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10, 0))
+
+output_entry = tk.Entry(output_entry_frame, textvariable=output_dir_var, font=("DM Sans", 10))
+output_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+browse_button = tk.Button(
+    output_entry_frame,
+    text="",
+    command=browse_output_directory,
+    font=("DM Sans", 9),
+    bg="white",
+    fg="black",
+    padx=10,
+    width=3
+)
+browse_button.pack(side=tk.RIGHT, padx=(10, 0))
 
 # Progress bar
 progress_bar = ttk.Progressbar(main_frame, mode='determinate', length=300)
@@ -139,7 +211,7 @@ progress_bar.pack(pady=(0, 10))
 # Button
 process_button = tk.Button(
     main_frame,
-    text="Select MP4 Video",
+    text="Process Video",
     command=select_file_and_add_watermark,
     font=("DM Sans", 10),
     bg="#4CAF50",
