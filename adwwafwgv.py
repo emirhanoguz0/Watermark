@@ -1,6 +1,7 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 import os
+import threading
 import numpy as np
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
@@ -19,26 +20,8 @@ FONT_SIZE = 20  # Yazı tipi boyutu
 FONT_COLOR = 'white'  # Yazı tipi rengi
 POSITION = ('center', 'center')  # Konum
 
-def select_file_and_add_watermark():
-    """Dosya seçme penceresini açar ve filigran ekleme işlemini başlatır."""
-    # Kullanıcıdan watermark metnini al
-    text = watermark_var.get().strip()
-    if not text:
-        messagebox.showwarning("Uyarı", "Lütfen bir filigran metni girin.")
-        return
-
-    file_path = filedialog.askopenfilename(
-        title="Filigran Eklenecek MP4 Dosyasını Seçin",
-        filetypes=[("MP4 Video Dosyaları", "*.mp4")]
-    )
-
-    if not file_path:
-        status_label.config(text="İşlem iptal edildi.")
-        return
-
-    status_label.config(text="İşlem başladı, lütfen bekleyin...")
-    root.update_idletasks()
-
+def process_video_thread(file_path, text):
+    """Video işleme işlemini ayrı thread'de çalıştırır."""
     try:
         video_clip = VideoFileClip(file_path)
 
@@ -92,34 +75,71 @@ def select_file_and_add_watermark():
             audio_codec='aac'
         )
 
-        messagebox.showinfo(
-            "Başarılı!",
-            f"Video başarıyla işlendi!\n\nYeni dosyanız Masaüstüne kaydedildi:\n{output_filename}"
-        )
-        status_label.config(text="İşlem tamamlandı. Yeni video seçebilirsiniz.")
+        # UI güncellemeleri ana thread'de yapılmalı
+        root.after(0, lambda: messagebox.showinfo(
+            "Success!",
+            f"Video processed successfully!\n\nNew file saved to Desktop:\n{output_filename}"
+        ))
+        root.after(0, lambda: status_label.config(text="Processing completed. You can select a new video."))
+        
     except Exception as e:
-        messagebox.showerror("Hata!", f"Bir hata oluştu:\n{e}")
-        status_label.config(text="Hata oluştu. Lütfen tekrar deneyin.")
+        root.after(0, lambda: messagebox.showerror("Error!", f"An error occurred:\n{e}"))
+        root.after(0, lambda: status_label.config(text="Error occurred. Please try again."))
+    finally:
+        root.after(0, lambda: progress_bar.stop())
+        root.after(0, lambda: progress_bar.config(mode='determinate'))
+        root.after(0, lambda: process_button.config(state='normal'))
+
+def select_file_and_add_watermark():
+    """Dosya seçme penceresini açar ve filigran ekleme işlemini başlatır."""
+    # Kullanıcıdan watermark metnini al
+    text = watermark_var.get().strip()
+    if not text:
+        messagebox.showwarning("Warning", "Please enter a watermark text.")
+        return
+
+    file_path = filedialog.askopenfilename(
+        title="Select MP4 Video File to Add Watermark",
+        filetypes=[("MP4 Video Files", "*.mp4")]
+    )
+
+    if not file_path:
+        status_label.config(text="Operation cancelled.")
+        return
+
+    status_label.config(text="Processing started, please wait...")
+    progress_bar.config(mode='indeterminate')
+    progress_bar.start()
+    process_button.config(state='disabled')
+    
+    # Video işleme işlemini ayrı thread'de başlat
+    thread = threading.Thread(target=process_video_thread, args=(file_path, text))
+    thread.daemon = True
+    thread.start()
 
 # --- Grafik Arayüz (GUI) Kurulumu ---
 root = tk.Tk()
-root.title("Hızlı Filigran Ekleme Aracı")
-root.geometry("500x220")
+root.title("Quick Watermark Tool")
+root.geometry("500x250")
 
 main_frame = tk.Frame(root, padx=20, pady=20)
 main_frame.pack(expand=True, fill=tk.BOTH)
 
-# Filigran metni girişi
+# Watermark text input
 watermark_var = tk.StringVar(value="©")
-wm_label = tk.Label(main_frame, text="Filigran Metni:", font=("DM Sans", 10))
+wm_label = tk.Label(main_frame, text="Watermark Text:", font=("DM Sans", 10))
 wm_label.pack(anchor="w")
 wm_entry = tk.Entry(main_frame, textvariable=watermark_var, font=("DM Sans", 12))
 wm_entry.pack(fill=tk.X, pady=(0, 10))
 
-# Buton
+# Progress bar
+progress_bar = ttk.Progressbar(main_frame, mode='determinate', length=300)
+progress_bar.pack(pady=(0, 10))
+
+# Button
 process_button = tk.Button(
     main_frame,
-    text="MP4 Video Seç",
+    text="Select MP4 Video",
     command=select_file_and_add_watermark,
     font=("DM Sans", 10),
     bg="#4CAF50",
@@ -129,8 +149,8 @@ process_button = tk.Button(
 )
 process_button.pack(pady=5)
 
-# Durum etiketi
-status_label = tk.Label(main_frame, text="Lütfen bir video dosyası seçin.", font=("DM Sans", 10))
+# Status label
+status_label = tk.Label(main_frame, text="Please select a video file.", font=("DM Sans", 10))
 status_label.pack(pady=10)
 
 root.mainloop()
