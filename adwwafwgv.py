@@ -2,7 +2,9 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import os
 import numpy as np
-from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
+from moviepy.video.io.VideoFileClip import VideoFileClip
+from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
+from moviepy.video.VideoClip import ImageClip
 from PIL import Image, ImageDraw, ImageFont
 try:
     # FFmpeg'i ilk çalıştırmada otomatik indirip yolunu ayarlar
