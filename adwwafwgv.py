@@ -20,9 +20,15 @@ FONT_SIZE = 20  # Yazı tipi boyutu
 FONT_COLOR = 'white'  # Yazı tipi rengi
 POSITION = ('center', 'center')  # Konum
 
+def update_progress(value, text):
+    """Progress bar'ı günceller."""
+    root.after(0, lambda: progress_bar.config(value=value))
+    root.after(0, lambda: progress_label.config(text=f"{int(value)}%"))
+
 def process_video_thread(file_path, text):
     """Video işleme işlemini ayrı thread'de çalıştırır."""
     try:
+        update_progress(10, "Loading video...")
         video_clip = VideoFileClip(file_path)
 
         # PIL ile şeffaf metin görseli üret (ImageMagick bağımlılığı yok)
@@ -70,8 +76,10 @@ def process_video_thread(file_path, text):
             txt_clip = ImageClip(rgb_with_alpha).with_duration(video_clip.duration)
             return txt_clip
 
+        update_progress(30, "Creating watermark...")
         watermark_clip = build_text_clip(text, int(size_var.get()), FONT_COLOR).with_position(POSITION)
 
+        update_progress(50, "Compositing video...")
         final_clip = CompositeVideoClip([video_clip, watermark_clip])
 
         base_name = os.path.basename(file_path)
@@ -85,11 +93,14 @@ def process_video_thread(file_path, text):
         
         output_path = os.path.join(output_dir, output_filename)
 
+        update_progress(70, "Writing video file...")
         final_clip.write_videofile(
             output_path,
             codec='libx264',
             audio_codec='aac'
         )
+        
+        update_progress(100, "Complete!")
 
         # UI güncellemeleri ana thread'de yapılmalı
         root.after(0, lambda: status_label.config(text="Processing completed. You can select a new video."))
@@ -98,9 +109,6 @@ def process_video_thread(file_path, text):
         root.after(0, lambda: messagebox.showerror("Error!", f"An error occurred:\n{e}"))
         root.after(0, lambda: status_label.config(text="Error occurred. Please try again."))
     finally:
-        root.after(0, lambda: progress_bar.stop())
-        root.after(0, lambda: progress_bar.config(mode='determinate', value=100))
-        root.after(0, lambda: progress_label.config(text="100%"))
         root.after(0, lambda: process_button.config(state='normal'))
 
 def browse_output_directory():
@@ -242,7 +250,7 @@ progress_frame = tk.Frame(main_frame)
 progress_frame.pack(fill=tk.X, pady=(0, 10))
 
 progress_bar = ttk.Progressbar(progress_frame, mode='determinate', length=250)
-progress_bar.pack(side=tk.LEFT)
+progress_bar.pack(side=tk.LEFT, padx=(135, 0))
 
 progress_label = tk.Label(progress_frame, text="0%", font=("DM Sans", 10))
 progress_label.pack(side=tk.LEFT, padx=(10, 0))
