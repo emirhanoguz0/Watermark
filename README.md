@@ -36,7 +36,7 @@ A simple and user-friendly application for adding watermarks to MP4 videos.
 
 ### Developer Setup
 ```bash
-git clone <repo-url>
+git clone <https://github.com/emirhanoguz0/Watermark>
 cd Watermark
 python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
