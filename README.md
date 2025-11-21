@@ -1,40 +1,40 @@
 # Quick Watermark Tool
 
-MP4 videolarına filigran eklemek için geliştirilmiş basit ve kullanıcı dostu bir uygulama.
+A simple and user-friendly application for adding watermarks to MP4 videos.
 
-## Özellikler
+## Features
 
-- **Kolay Kullanım**: Sürükle-bırak ile video seçimi
-- **Özelleştirilebilir Filigran**: Metin, font ve boyut seçimi
-- **Çıktı Kontrolü**: İstediğiniz klasöre kaydetme
-- **Gerçek Zamanlı Progress**: İşlem durumu takibi
-- **Threading**: UI donmadan video işleme
-- **Tek Dosya**: Kurulum gerektirmez
+- **Easy to Use**: Simple drag-and-drop video selection
+- **Customizable Watermark**: Text, font, and size selection
+- **Output Control**: Save to any directory you choose
+- **Real-time Progress**: Track processing status
+- **Threading**: Video processing without UI freezing
+- **Single File**: No installation required
 
-## Kullanım
+## Usage
 
-1. **Watermark Text**: Filigran metnini girin
-2. **Input Video**: Video dosyasını seçin (Browse ile)
-3. **Output Directory**: Çıktı klasörünü belirleyin
-4. **Font & Size**: Font ve boyut seçin
-5. **Process Video**: İşlemi başlatın
+1. **Watermark Text**: Enter your watermark text
+2. **Input Video**: Select video file (using Browse button)
+3. **Output Directory**: Choose output folder
+4. **Font & Size**: Select font and size
+5. **Process Video**: Start processing
 
-## Teknik Detaylar
+## Technical Details
 
 - **Python**: 3.12
 - **GUI**: Tkinter
-- **Video İşleme**: MoviePy
-- **Font İşleme**: Pillow (PIL)
-- **Derleme**: PyInstaller
+- **Video Processing**: MoviePy
+- **Font Processing**: Pillow (PIL)
+- **Build Tool**: PyInstaller
 
-## Gereksinimler
+## Requirements
 
 - Windows 10/11
-- FFmpeg (otomatik indirilir)
+- FFmpeg (automatically downloaded on first run)
 
-## Kurulum
+## Installation
 
-### Geliştirici Kurulumu
+### Developer Setup
 ```bash
 git clone <repo-url>
 cd Watermark
@@ -43,14 +43,14 @@ python -m venv .venv
 .venv\Scripts\python adwwafwgv.py
 ```
 
-### Son Kullanıcı
-`dist/Watermark.exe` dosyasını çalıştırın. Kurulum gerekmez.
+### End User
+Run `dist/Watermark.exe`. No installation required.
 
-## Desteklenen Formatlar
+## Supported Formats
 
-- **Giriş**: MP4
-- **Çıkış**: MP4 (H.264/AAC)
+- **Input**: MP4
+- **Output**: MP4 (H.264/AAC)
 
-## Lisans
+## License
 
-Bu proje MIT lisansı altında lisanslanmıştır.
+This project is licensed under the MIT License.
